@@ -23,6 +23,7 @@ pygame.display.set_caption("Character Grid")
 # Font setup
 font = pygame.font.SysFont(None, FONT_SIZE)
 input_font = pygame.font.SysFont(None, 24)
+tooltip_font = pygame.font.SysFont(None, 24)
 
 # Generate matrices
 char_matrix = [[chr(random.randint(65, 90)) for _ in range(COLS)] for _ in range(ROWS)]
@@ -36,12 +37,24 @@ def get_color(num):
 redraw = True
 input_active = False
 input_text = ''
+hover_row, hover_col = None, None
 
-pygame.scrap.init()
+def send_to_clipboard(text):
+    pygame.scrap.init()
+    pygame.scrap.put(pygame.SCRAP_TEXT, text.encode('utf-8'))
+
 # Main loop
 running = True
 while running:
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    if mouse_y < ROWS * CELL_SIZE:
+        hover_col = mouse_x // CELL_SIZE
+        hover_row = mouse_y // CELL_SIZE
+    else:
+        hover_col, hover_row = None, None
+
     for event in pygame.event.get():
+        redraw=True
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.VIDEORESIZE:
@@ -67,10 +80,10 @@ while running:
                 elif event.key == pygame.K_BACKSPACE:
                     input_text = input_text[:-1]
                 elif event.key == pygame.K_v and (pygame.key.get_mods() & pygame.KMOD_CTRL or pygame.key.get_mods() & pygame.KMOD_META):
-
                     # Handle paste
+                    pygame.scrap.init()
                     if pygame.scrap.get(pygame.SCRAP_TEXT):
-                        pasted_text = pygame.scrap.get("text/plain;charset=utf-8").decode().replace('\x00',"")
+                        pasted_text = pygame.scrap.get(pygame.SCRAP_TEXT).decode("utf-8").replace('\x00',"")
                         input_text += pasted_text
                 else:
                     input_text += event.unicode
@@ -107,7 +120,6 @@ while running:
         pygame.draw.rect(screen, (0, 0, 0), input_box)
         # Draw the input box border
         pygame.draw.rect(screen, (255, 255, 255), input_box, 2)
-        
         text_surface = input_font.render(input_text, True, (255, 255, 255))
         # Draw the updated text in the input box
         inp_rect = text_surface.get_rect(topleft=(input_box.x + 5, input_box.y + 5))
@@ -119,6 +131,16 @@ while running:
         button_text = input_font.render("Submit", True, (0, 0, 0))
         button_rect = button_text.get_rect(center=button_box.center)
         screen.blit(button_text, button_rect)
+
+        # Render Tooltip
+        if hover_row is not None and hover_col is not None:
+            num = num_matrix[hover_row][hover_col]
+            char = char_matrix[hover_row][hover_col]
+            tooltip_text = f"{char} ({num})"
+            tooltip_surface = tooltip_font.render(tooltip_text, True, (255, 255, 255))
+            tooltip_x = mouse_x
+            tooltip_y = mouse_y - 20  # Offset the tooltip above the mouse cursor
+            screen.blit(tooltip_surface, (tooltip_x, tooltip_y))
 
         # Update the display
         pygame.display.flip()
