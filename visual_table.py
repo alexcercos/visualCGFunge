@@ -188,6 +188,8 @@ class VisualCGFungeTable:
     def render_tooltip(self):
         if self.hover_row is None or self.hover_col is None:
             return
+        if pygame.mouse.get_focused() == 0:
+            return
 
         d = self.cgfunge.annotations[self.hover_row][self.hover_col]
         letter = self.cgfunge.table[self.hover_row][self.hover_col]
