@@ -115,17 +115,7 @@ class VisualCGFungeTable:
         # Draw the grid
         for row in range(TABLE_MAX_HEIGHT):
             for col in range(TABLE_MAX_WIDTH):
-                num = self.cgfunge.heatmap[row][col]
-                char = self.cgfunge.table[row][col]
-                color = self.get_color(num)
-                
-                # Draw the cell background
-                pygame.draw.rect(self.screen, color, (col * self.cell_size, row * self.cell_size, self.cell_size, self.cell_size))
-                
-                # Draw the character
-                text_surface = self.font.render(char, True, (255, 255, 255))
-                text_rect = text_surface.get_rect(center=((col * self.cell_size) + self.cell_size // 2, (row * self.cell_size) + self.cell_size // 2))
-                self.screen.blit(text_surface, text_rect)
+                self.draw_cell(row, col)
 
         # Draw the input box
         self.input_box = pygame.Rect(10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.screen.get_width() - self.BUTTON_WIDTH - 20, self.BUTTON_HEIGHT)
@@ -146,65 +136,85 @@ class VisualCGFungeTable:
         button_rect = button_text.get_rect(center=self.button_box.center)
         self.screen.blit(button_text, button_rect)
 
-        # Render Tooltip
-        if self.hover_row is not None and self.hover_col is not None:
-            tooltip_text = self .cgfunge.annotations[self.hover_row][self.hover_col]
-            tooltip_surface = self.tooltip_font.render(tooltip_text, True, (255, 255, 255))
-            tooltip_x = self.mouse_x
-            tooltip_y = self.mouse_y  # Offset the tooltip above the mouse cursor
-            self.screen.blit(tooltip_surface, (tooltip_x, tooltip_y))
+        self.render_tooltip()
 
         # Update the display
         pygame.display.flip()
         self.redraw = False
 
-    def frame(self):
-        self.determine_hovers()
+    def render_tooltip(self):
+        if self.hover_row is None or self.hover_col is None:
+            return
 
+        tooltip_text = self.cgfunge.annotations[self.hover_row][self.hover_col]
+        if not tooltip_text:
+            return
+
+        tooltip_surface = self.tooltip_font.render(tooltip_text, True, (255, 255, 255))
+        tooltip_x = self.mouse_x + 15
+        tooltip_y = self.mouse_y
+        trect = tooltip_surface.get_rect(center=(self.mouse_x + 15,self.mouse_y))
+        trect.centerx+=trect.width//2
+        trect.centery+=trect.height//2
+        trect.width+=4
+        trect.height+=4
+        trect.centerx-=2
+        trect.centery-=2
+        pygame.draw.rect(self.screen, (0,0,0), trect)
+        self.screen.blit(tooltip_surface, (tooltip_x, tooltip_y))
+    
+    def load_input_text(self):
+        self.cgfunge.set_table_from_text(self.input_text)
+        self.input_text = ''
+        self.redraw = True
+    
+    def resize_screen(self, new_width, new_height):
+        WIDTH, HEIGHT = new_width, new_height
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+        self.redraw = True
+
+        # Calculate new cell size maintaining aspect ratio
+        cell_width = self.screen.get_width() // TABLE_MAX_WIDTH
+        cell_height = (self.screen.get_height() - self.INPUT_HEIGHT) // TABLE_MAX_HEIGHT
+        self.cell_size = max(self.MIN_CELL_SIZE, min(cell_width, cell_height, self.MAX_CELL_SIZE))
+
+    def process_events(self):
         for event in pygame.event.get():
-            self.redraw=True
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.VIDEORESIZE:
-                WIDTH, HEIGHT = event.w, event.h
-                self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-                self.redraw = True
+                self.resize_screen(event.w, event.h)
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Check if the input box is clicked
                 if self.input_box.collidepoint(event.pos):
                     self.input_active = True
                 else:
                     self.input_active = False
-                # Check if the button is clicked
+
                 if self.button_box.collidepoint(event.pos):
-                    print("Submit",self.input_text)
-                    self.cgfunge.set_table_from_text(self.input_text)
-                    self.input_text = ''
-                    self.redraw = True
+                    self.load_input_text()
             elif event.type == pygame.KEYDOWN:
                 if self.input_active:
                     if event.key == pygame.K_RETURN:
-                        print("Submit",self.input_text)
-                        self.cgfunge.set_table_from_text(self.input_text)
-                        self.input_text = ''
+                        self.load_input_text()
+                    
                     elif event.key == pygame.K_BACKSPACE:
                         self.input_text = self.input_text[:-1]
+                    
                     elif event.key == pygame.K_v and (pygame.key.get_mods() & pygame.KMOD_CTRL or pygame.key.get_mods() & pygame.KMOD_META):
-                        # Handle paste
-                        win32clipboard.OpenClipboard()
-                        data = win32clipboard.GetClipboardData()
-                        win32clipboard.CloseClipboard()
-                        if data:
-                            self.input_text+=data
+                        self.paste_clipboard_input()
+                    
                     else:
                         self.input_text += event.unicode
                     self.redraw = True
-        
-        # Calculate new cell size maintaining aspect ratio
-        cell_width = self.screen.get_width() // TABLE_MAX_WIDTH
-        cell_height = (self.screen.get_height() - self.INPUT_HEIGHT) // TABLE_MAX_HEIGHT
-        self.cell_size = max(self.MIN_CELL_SIZE, min(cell_width, cell_height, self.MAX_CELL_SIZE))
+                
+                #TODO write to table
 
+    def frame(self):
+
+        self.determine_hovers()
+        self.process_events()
         self.redraw_complete()
 
         return self.running
