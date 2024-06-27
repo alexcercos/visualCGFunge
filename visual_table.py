@@ -72,7 +72,7 @@ class VisualCGFungeTable:
     def send_to_clipboard(self):
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardText("\n".join([r.rstrip() for r in self.cgfunge.table]))
+        win32clipboard.SetClipboardText("\n".join([r.rstrip() for r in self.cgfunge.table]).rstrip())
         win32clipboard.CloseClipboard()
     
     def paste_clipboard_input(self):
