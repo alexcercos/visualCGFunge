@@ -21,7 +21,7 @@ class VisualCGFungeTable:
         for i in range(3):
             self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(3-i) - 10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
 
-        self.font = pygame.font.SysFont("Consolas", 18)
+        self.font = pygame.font.SysFont("Arial", self.cell_size-2)
         self.input_font = pygame.font.SysFont("Consolas", 22)
         self.tooltip_font = pygame.font.SysFont("Consolas", 15)
 
@@ -37,6 +37,8 @@ class VisualCGFungeTable:
         self.mouse_x, self.mouse_y = 0,0
 
         self.input_border_color = (255,255,255)
+
+        self.ctrl_stored_nums=""
     
     def get_color(self, num):
         if num <10:
@@ -77,17 +79,24 @@ class VisualCGFungeTable:
                 min(255,int(g1*(1-lerpv)+g2*lerpv)),
                 min(255,int(b1*(1-lerpv)+b2*lerpv)))
 
-    def send_to_clipboard(self):
+    def send_to_clipboard(self, custom_text=None):
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardText("\n".join(["".join(r).rstrip() for r in self.cgfunge.table]).rstrip())
+        if custom_text:
+            win32clipboard.SetClipboardText(custom_text)
+        else:
+            win32clipboard.SetClipboardText("\n".join(["".join(r).rstrip() for r in self.cgfunge.table]).rstrip(), win32clipboard.CF_UNICODETEXT)
         win32clipboard.CloseClipboard()
     
-    def paste_clipboard_input(self):
-        
+    def get_clipboard(self):
         win32clipboard.OpenClipboard()
         data = win32clipboard.GetClipboardData()
         win32clipboard.CloseClipboard()
+        return data
+
+    def paste_clipboard_input(self):
+        
+        data = self.get_clipboard()
         if not data: return
 
         if self.input_active:
@@ -249,11 +258,11 @@ class VisualCGFungeTable:
             self.cgfunge.table[y][x] = " "
             self.redraw = True
 
-    def keyenter_press(self):
+    def keyenter_press(self,is_shift):
         if self.input_active:
             self.load_input_text()
         elif self.active_cell:
-            self.move_active_cell(0,1)
+            self.move_active_cell(0,-1 if is_shift else 1)
     
     def generic_key_press(self, unicode):
         if not unicode:return
@@ -281,6 +290,7 @@ class VisualCGFungeTable:
         cell_width = self.screen.get_width() // TABLE_MAX_WIDTH
         cell_height = (self.screen.get_height() - self.INPUT_HEIGHT) // TABLE_MAX_HEIGHT
         self.cell_size = max(self.MIN_CELL_SIZE, min(cell_width, cell_height, self.MAX_CELL_SIZE))
+        self.font = pygame.font.SysFont("Arial", self.cell_size-2)
 
         for i in range(3):
             self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(3-i) - 10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
@@ -334,19 +344,64 @@ class VisualCGFungeTable:
                     self.run_simulation()
 
             elif event.type == pygame.KEYDOWN:
+
+                is_shift = (pygame.key.get_mods() & pygame.KMOD_SHIFT)
                 
                 #CTRL + key
                 if (pygame.key.get_mods() & pygame.KMOD_CTRL or pygame.key.get_mods() & pygame.KMOD_META):
-                
+
+                    if event.key  ==   pygame.K_0 or event.key == pygame.K_KP0:
+                        self.ctrl_stored_nums+="0"
+                        continue
+                    if event.key  ==   pygame.K_1 or event.key == pygame.K_KP1:
+                        self.ctrl_stored_nums+="1"
+                        continue
+                    if event.key  ==   pygame.K_2 or event.key == pygame.K_KP2:
+                        self.ctrl_stored_nums+="2"
+                        continue
+                    if event.key  ==   pygame.K_3 or event.key == pygame.K_KP3:
+                        self.ctrl_stored_nums+="3"
+                        continue
+                    if event.key  ==   pygame.K_4 or event.key == pygame.K_KP4:
+                        self.ctrl_stored_nums+="4"
+                        continue
+                    if event.key  ==   pygame.K_5 or event.key == pygame.K_KP5:
+                        self.ctrl_stored_nums+="5"
+                        continue
+                    if event.key  ==   pygame.K_6 or event.key == pygame.K_KP6:
+                        self.ctrl_stored_nums+="6"
+                        continue
+                    if event.key  ==   pygame.K_7 or event.key == pygame.K_KP7:
+                        self.ctrl_stored_nums+="7"
+                        continue
+                    if event.key  ==   pygame.K_8 or event.key == pygame.K_KP8:
+                        self.ctrl_stored_nums+="8"
+                        continue
+                    if event.key  ==   pygame.K_9 or event.key == pygame.K_KP9:
+                        self.ctrl_stored_nums+="9"
+                        continue
+                    
+                    self.ctrl_stored_nums=""
+
                     #CTRL+ENTER
                     if event.key == pygame.K_RETURN:
                         self.run_simulation()
 
-                    #CTRL C TODO -> ctrl shift C = copy all
-                    #CTRL SHIFT V -> paste directly
+                    #CTRL+C
+                    elif event.key == pygame.K_c:
+                        if is_shift:
+                            self.send_to_clipboard()
+                        elif self.active_cell:
+                            x,y = self.active_cell
+                            self.send_to_clipboard(self.cgfunge.table[y][x])
                 
+                    #CTRL+V
                     elif event.key == pygame.K_v:
-                        self.paste_clipboard_input()
+                        if is_shift: #send directly
+                            self.cgfunge.set_table_from_text(self.get_clipboard())
+                            self.redraw = True
+                        else:
+                            self.paste_clipboard_input()
                     
                     elif event.key == pygame.K_z:
                         print("CTRL Z") #TODO
@@ -379,7 +434,11 @@ class VisualCGFungeTable:
 
                 #ENTER
                 elif event.key == pygame.K_RETURN:
-                    self.keyenter_press()
+                    self.keyenter_press(is_shift)
+
+                #TAB (move)
+                elif event.key == pygame.K_TAB:
+                    self.move_active_cell(-1 if is_shift else 1,0)
 
                 #BACKSPACE
                 elif event.key == pygame.K_BACKSPACE:
@@ -388,6 +447,14 @@ class VisualCGFungeTable:
                 #REST OF KEYS
                 else:
                     self.generic_key_press(event.unicode)
+
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_LCTRL or event.key == pygame.K_RCTRL:
+                    if not self.ctrl_stored_nums:
+                        continue
+                    num = int(self.ctrl_stored_nums)
+                    if num==0: continue
+                    self.generic_key_press(chr(num))
 
     def frame(self):
 
