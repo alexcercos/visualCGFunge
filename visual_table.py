@@ -35,6 +35,8 @@ class VisualCGFungeTable:
         self.hover_row, self.hover_col = None, None
         self.running = True
         self.mouse_x, self.mouse_y = 0,0
+
+        self.input_border_color = (255,255,255)
     
     def get_color(self, num):
         if num <10:
@@ -138,6 +140,19 @@ class VisualCGFungeTable:
         text_rect = text_surface.get_rect(center=((col * self.cell_size) + self.cell_size // 2, (row * self.cell_size) + self.cell_size // 2))
         self.screen.blit(text_surface, text_rect)
 
+    def render_input(self):
+
+        self.input_box = pygame.Rect(10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.screen.get_width() - self.BUTTON_WIDTH*3 - 20, self.BUTTON_HEIGHT)
+
+        pygame.draw.rect(self.screen, (0, 0, 0), self.input_box)
+        # Draw the input box border
+        pygame.draw.rect(self.screen, self.input_border_color, self.input_box, 2)
+
+        text_surface = self.input_font.render(self.input_text, True, (255, 255, 255))
+        # Draw the updated text in the input box
+        inp_rect = text_surface.get_rect(topleft=(self.input_box.x + 5, self.input_box.y + 5))
+        self.screen.blit(text_surface, inp_rect)
+
     def redraw_complete(self):
         if not self.redraw: return
 
@@ -149,17 +164,7 @@ class VisualCGFungeTable:
             for col in range(TABLE_MAX_WIDTH):
                 self.draw_cell(row, col)
 
-        # Draw the input box
-        self.input_box = pygame.Rect(10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.screen.get_width() - self.BUTTON_WIDTH*3 - 20, self.BUTTON_HEIGHT)
-        pygame.draw.rect(self.screen, (255, 255, 255), self.input_box, 2)
-        # Clear the input box area
-        pygame.draw.rect(self.screen, (0, 0, 0), self.input_box)
-        # Draw the input box border
-        pygame.draw.rect(self.screen, (255, 255, 255), self.input_box, 2)
-        text_surface = self.input_font.render(self.input_text, True, (255, 255, 255))
-        # Draw the updated text in the input box
-        inp_rect = text_surface.get_rect(topleft=(self.input_box.x + 5, self.input_box.y + 5))
-        self.screen.blit(text_surface, inp_rect)
+        self.render_input()
 
         # Draw the submit button
         buttons = ["Load","Copy","Run"]
@@ -236,11 +241,11 @@ class VisualCGFungeTable:
     def backspace_press(self):
         if self.input_active:
             self.input_text = self.input_text[:-1]
+            self.render_input()
         elif self.active_cell:
             x,y = self.active_cell
             self.cgfunge.table[y][x] = " "
-        
-        self.redraw = True
+            self.redraw = True
 
     def keyenter_press(self):
         if self.input_active:
