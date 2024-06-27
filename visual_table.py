@@ -7,6 +7,7 @@ class VisualCGFungeTable:
     def __init__(self):
         pygame.init()
         self.MIN_CELL_SIZE, self.MAX_CELL_SIZE = 10, 40
+        self.UNDO_STACK_SIZE = 64
 
         self.cell_size = 20
 
@@ -39,6 +40,15 @@ class VisualCGFungeTable:
         self.input_border_color = (255,255,255)
 
         self.ctrl_stored_nums=""
+
+        #UNDO/REDO
+        self.undo_stack = [""]*self.UNDO_STACK_SIZE
+        self.undo_index = 0
+        self.undo_bottom = 0
+        self.undo_top = 0
+    
+    def get_table_string(self):
+        return "\n".join(["".join(r).rstrip() for r in self.cgfunge.table]).rstrip()
     
     def get_color(self, num):
         if num <10:
@@ -85,7 +95,7 @@ class VisualCGFungeTable:
         if custom_text:
             win32clipboard.SetClipboardText(custom_text)
         else:
-            win32clipboard.SetClipboardText("\n".join(["".join(r).rstrip() for r in self.cgfunge.table]).rstrip(), win32clipboard.CF_UNICODETEXT)
+            win32clipboard.SetClipboardText(self.get_table_string(), win32clipboard.CF_UNICODETEXT)
         win32clipboard.CloseClipboard()
     
     def get_clipboard(self):
@@ -323,6 +333,30 @@ class VisualCGFungeTable:
         x,y = self.active_cell
         self.draw_empty_square((0,0,255), 2, self.cell_size, x*self.cell_size, y*self.cell_size)
 
+    def add_undo_state(self):
+        self.undo_index = (self.undo_index+1)%self.UNDO_STACK_SIZE
+        self.undo_stack[self.undo_index] = self.get_table_string()
+        self.undo_top = self.undo_index
+
+        if self.undo_top == self.undo_bottom:
+            self.undo_bottom = (self.undo_bottom+1)%self.UNDO_STACK_SIZE
+
+    def undo(self):
+        if self.undo_index==self.undo_bottom:
+            return #Cannot undo
+        
+        self.undo_index = (self.undo_index-1)%self.UNDO_STACK_SIZE
+        self.cgfunge.set_table_from_text(self.undo_stack[self.undo_index])
+        self.redraw = True
+
+    def redo(self):
+        if self.undo_index==self.undo_top:
+            return #Cannot redo
+        
+        self.undo_index = (self.undo_index+1)%self.UNDO_STACK_SIZE
+        self.cgfunge.set_table_from_text(self.undo_stack[self.undo_index])
+        self.redraw = True
+
     def process_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -336,6 +370,7 @@ class VisualCGFungeTable:
 
                 if self.button_boxes[0].collidepoint(event.pos):
                     self.load_input_text()
+                    self.add_undo_state()
                 
                 if self.button_boxes[1].collidepoint(event.pos):
                     self.send_to_clipboard()
@@ -399,28 +434,34 @@ class VisualCGFungeTable:
                     elif event.key == pygame.K_v:
                         if is_shift: #send directly
                             self.cgfunge.set_table_from_text(self.get_clipboard())
+                            self.add_undo_state()
                             self.redraw = True
                         else:
                             self.paste_clipboard_input()
                     
                     elif event.key == pygame.K_z:
-                        print("CTRL Z") #TODO
+                        self.undo()
                     
                     elif event.key == pygame.K_y:
-                        print("CTRL Y") #TODO
+                        self.redo()
                     
                     elif event.key == pygame.K_BACKSPACE:
                         self.clear_all()
+                        self.add_undo_state()
                     
                         #ARROW KEYS
                     elif event.key == pygame.K_LEFT:
                         self.generic_key_press("<")
+                        self.add_undo_state()
                     elif event.key == pygame.K_RIGHT:
                         self.generic_key_press(">")
+                        self.add_undo_state()
                     elif event.key == pygame.K_DOWN:
                         self.generic_key_press("v")
+                        self.add_undo_state()
                     elif event.key == pygame.K_UP:
                         self.generic_key_press("^")
+                        self.add_undo_state()
                 
                 #ARROW KEYS
                 elif event.key == pygame.K_LEFT:
@@ -444,9 +485,14 @@ class VisualCGFungeTable:
                 elif event.key == pygame.K_BACKSPACE:
                     self.backspace_press()
                 
+                elif event.key == pygame.K_ESCAPE:
+                    self.active_cell = None
+                    self.redraw = True
+                
                 #REST OF KEYS
                 else:
                     self.generic_key_press(event.unicode)
+                    self.add_undo_state()
 
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_LCTRL or event.key == pygame.K_RCTRL:
@@ -455,6 +501,7 @@ class VisualCGFungeTable:
                     num = int(self.ctrl_stored_nums)
                     if num==0: continue
                     self.generic_key_press(chr(num))
+                    self.add_undo_state()
 
     def frame(self):
 
