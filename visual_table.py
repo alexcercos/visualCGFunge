@@ -69,11 +69,18 @@ class VisualCGFungeTable:
                 min(255,int(g1*(1-lerpv)+g2*lerpv)),
                 min(255,int(b1*(1-lerpv)+b2*lerpv)))
 
-    def send_to_clipboard(text): #TODO send table instead
+    def send_to_clipboard(self):
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardText('testing 123')
+        win32clipboard.SetClipboardText("\n".join([r.rstrip() for r in self.cgfunge.table]))
         win32clipboard.CloseClipboard()
+    
+    def paste_clipboard_input(self):
+        win32clipboard.OpenClipboard()
+        data = win32clipboard.GetClipboardData()
+        win32clipboard.CloseClipboard()
+        if data:
+            self.input_text+=data
     
     def determine_hovers(self):
         self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
