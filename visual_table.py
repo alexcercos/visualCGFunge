@@ -14,13 +14,14 @@ class VisualCGFungeTable:
         self.INPUT_HEIGHT = 40
         self.BUTTON_WIDTH = 50
         self.BUTTON_HEIGHT = 30
+        self.MARGIN = 5
 
-        self.screen = pygame.display.set_mode((TABLE_MAX_WIDTH * self.cell_size, TABLE_MAX_HEIGHT * self.cell_size + self.INPUT_HEIGHT), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((self.MARGIN*2+TABLE_MAX_WIDTH * self.cell_size, self.MARGIN*2+TABLE_MAX_HEIGHT * self.cell_size + self.INPUT_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption("Visual CGFunge")
 
         self.button_boxes = [None]*3
         for i in range(3):
-            self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(3-i) - 10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+            self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(3-i) - 10, TABLE_MAX_HEIGHT * self.cell_size+self.MARGIN*2, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
 
         self.font = pygame.font.SysFont("Arial", self.cell_size-2)
         self.input_font = pygame.font.SysFont("Consolas", 22)
@@ -123,7 +124,7 @@ class VisualCGFungeTable:
         if self.mouse_x==mx and self.mouse_y==my:
             return
 
-        self.mouse_x, self.mouse_y = mx,my
+        self.mouse_x, self.mouse_y = mx-self.MARGIN,my-self.MARGIN
         self.hover_col = self.mouse_x // self.cell_size
         self.hover_row = self.mouse_y // self.cell_size
 
@@ -133,7 +134,7 @@ class VisualCGFungeTable:
         self.redraw = True
     
     def draw_empty_square(self, color, line_width, size, x, y):
-        pygame.draw.rect(self.screen, color, (x, y, size, size), line_width)
+        pygame.draw.rect(self.screen, color, (self.MARGIN + x, self.MARGIN + y, size, size), line_width)
         self.redraw = True
 
     def run_simulation(self):
@@ -152,16 +153,16 @@ class VisualCGFungeTable:
         color = self.get_color(num)
         
         # Draw the cell background
-        pygame.draw.rect(self.screen, color, (col * self.cell_size, row * self.cell_size, self.cell_size, self.cell_size))
+        pygame.draw.rect(self.screen, color, (self.MARGIN + col * self.cell_size, self.MARGIN+row * self.cell_size, self.cell_size, self.cell_size))
         
         # Draw the character
         text_surface = self.font.render(char, True, (0, 0, 0))
-        text_rect = text_surface.get_rect(center=((col * self.cell_size) + self.cell_size // 2, (row * self.cell_size) + self.cell_size // 2))
+        text_rect = text_surface.get_rect(center=((self.MARGIN + col * self.cell_size) + self.cell_size // 2, (self.MARGIN + row * self.cell_size) + self.cell_size // 2))
         self.screen.blit(text_surface, text_rect)
 
     def render_input(self):
 
-        self.input_box = pygame.Rect(10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.screen.get_width() - self.BUTTON_WIDTH*3 - 20, self.BUTTON_HEIGHT)
+        self.input_box = pygame.Rect(10, TABLE_MAX_HEIGHT * self.cell_size + self.MARGIN*2, self.screen.get_width() - self.BUTTON_WIDTH*3 - 20, self.BUTTON_HEIGHT)
 
         pygame.draw.rect(self.screen, (0, 0, 0), self.input_box)
         # Draw the input box border
@@ -318,6 +319,8 @@ class VisualCGFungeTable:
         self.input_border_color = (255,255,255)
 
         x,y = pos
+        x-=self.MARGIN
+        y-=self.MARGIN
         x//=self.cell_size
         y//=self.cell_size
 
