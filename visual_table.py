@@ -30,8 +30,44 @@ class VisualCGFungeTable:
         self.running = True
         self.mouse_x, self.mouse_y = 0,0
     
-    def get_color(self, num): #TODO modify
-        return (num * 2.55, 0, 255 - num * 2.55)
+    def get_color(self, num):
+        if num <10:
+            if num<0:return (30,10,10)
+            if num==0:return (255,255,255)
+            if num==1:return (224,255,255)
+            if num==2:return (224,224,255)
+            if num==3:return (224,224,224)
+            if num==4:return (193,224,224)
+            if num==5:return (193,193,224)
+            if num==6:return (193,193,193)
+            if num==7:return (162,193,193)
+            if num==8:return (162,162,193)
+            return (162,162,162)
+
+        cuts = [
+            (10/self.cgfunge.max_heatmap, (0,255,255)), #cyan 
+            (0.25, (0,255,0)), #green
+            (0.5, (255,255,0)), #yellow
+            (0.75, (255,128,0)), #orange
+            (1.0, (255,0,0)), #red
+        ]
+
+        value = num/self.cgfunge.max_heatmap
+
+        cut_i = 0
+        for i in range(1, len(cuts)):
+            if value <= cuts[i]:
+                cut_i = i
+                break
+        
+        r1,g1,b1 = cuts[cut_i-1][1]
+        r2,g2,b2 = cuts[cut_i][1]
+
+        lerpv = (value - cuts[cut_i-1][0])/(cuts[cut_i][0]-cuts[cut_i-1][0])
+
+        return (min(255,int(r1*(1-lerpv)+r2*lerpv)),
+                min(255,int(g1*(1-lerpv)+g2*lerpv)),
+                min(255,int(b1*(1-lerpv)+b2*lerpv)))
 
     def send_to_clipboard(text): #TODO send table instead
         win32clipboard.OpenClipboard()
