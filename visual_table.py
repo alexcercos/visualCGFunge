@@ -39,7 +39,7 @@ class VisualCGFungeTable:
     def get_color(self, num):
         if num <10:
             if num<0:return (30,10,10)
-            if num==0:return (245,245,245)
+            if num==0:return (255,255,255)
             if num==1:return (224,255,255)
             if num==2:return (224,224,255)
             if num==3:return (224,224,224)
