@@ -1,4 +1,4 @@
-test_cases=[
+validators=[
     (1, "NOT PRIME"),
     (2, "PRIME"),(3, "PRIME"),
     (4, "NOT PRIME"),
