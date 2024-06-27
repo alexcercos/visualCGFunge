@@ -1,0 +1,170 @@
+import numpy as np
+import random as rn
+
+TABLE_MAX_HEIGHT = 30
+TABLE_MAX_WIDTH = 40
+MAX_MOVES_ALLOWED = 3000
+
+class CGFungeTable:
+    def __init__(self):
+
+        #Empty table
+        self.table = []
+        for row in range(TABLE_MAX_HEIGHT):
+            self.table.append(" "*TABLE_MAX_WIDTH)
+        
+        self.heatmap = []
+        self.max_heatmap = 0
+        self.annotations = []
+        for i in range(TABLE_MAX_HEIGHT):
+            self.heatmap.append([0]*TABLE_MAX_WIDTH)
+            self.annotations.append(['']*TABLE_MAX_WIDTH)
+
+    def reset_annotations(self):
+        for i in range(TABLE_MAX_HEIGHT):
+            for j in range(TABLE_MAX_WIDTH):
+                char = self.table[i][j]
+                self.annotations[i][j] = f'{char} ({ord(char)})'
+    
+    def reset_heatmap(self):
+        self.heatmap = []
+        self.max_heatmap = 0
+        for i in range(TABLE_MAX_HEIGHT):
+            self.heatmap.append([0]*TABLE_MAX_WIDTH)
+
+    def set_table_from_text(self, raw_table):
+        lines = raw_table.split("\n")
+
+        for i,l in enumerate(lines):
+            if i >= TABLE_MAX_HEIGHT: return
+
+            self.table[i] = l.ljust(TABLE_MAX_WIDTH)[:TABLE_MAX_WIDTH]
+        
+        for e in range(i+1,TABLE_MAX_HEIGHT):
+            self.table[e] = " "*TABLE_MAX_WIDTH
+        
+        self.reset_annotations()
+
+    def to_int32(self,num):
+        num = num & 0xffffffff
+        if num >= 0x80000000:
+            num -= 0x100000000
+        return num
+    
+    def simulate(self, number : int, expected : str) -> int:
+        moves=1
+        px,py=0,0
+        movx,movy=1,0
+        ignore_next=False
+        str_mode=False
+        stack = [number]
+        current_action = self.table[py][px]
+        if self.heatmap[py][px]>=0:
+            self.heatmap[py][px]+=1
+            self.max_heatmap = max(self.heatmap[py][px],self.max_heatmap)
+        printed_str=""
+        while ignore_next or str_mode or current_action!="E":
+
+            if not ignore_next and not str_mode:
+                if current_action in "+-*/" and len(stack)<=1:
+                    print("STACK EMPTY:",number)
+                    self.heatmap[py][px]=-1
+                    return -1
+                if current_action in "DPX:IC" and len(stack)<=0:
+                    print("STACK EMPTY:",number)
+                    self.heatmap[py][px]=-1
+                    return -1
+
+            if ignore_next:
+                ignore_next = False
+            elif current_action=="\"":
+                str_mode = not str_mode
+            elif str_mode:
+                stack.append(ord(current_action))
+            elif current_action==">":
+                movx=1
+                movy=0
+            elif current_action=="<":
+                movx=-1
+                movy=0
+            elif current_action=="^":
+                movx=0
+                movy=-1
+            elif current_action=="v":
+                movx=0
+                movy=1
+            elif current_action=="S":
+                ignore_next = True
+            elif current_action in "0123456789":
+                stack.append(int(current_action))
+            elif current_action=="+":
+                second = stack[-1]
+                stack = stack[:-1]
+                stack[-1]+=second
+                stack[-1]=self.to_int32(stack[-1])
+            elif current_action=="-":
+                second = stack[-1]
+                stack = stack[:-1]
+                stack[-1]-=second
+                stack[-1]=self.to_int32(stack[-1])
+            elif current_action=="*":
+                second = stack[-1]
+                stack = stack[:-1]
+                stack[-1]*=second
+                stack[-1]=self.to_int32(stack[-1])
+            elif current_action=="/":
+                second = stack[-1]
+                stack = stack[:-1]
+                stack[-1]= stack[-1]//second
+                stack[-1]=self.to_int32(stack[-1])
+            elif current_action=="P":
+                stack = stack[:-1]
+            elif current_action=="X":
+                index=stack[-1]
+                stack = stack[:-1]
+                if index>=len(stack):
+                    print("STACK UNDERFLOW:",number)
+                    self.heatmap[py][px]=-1
+                    return -1
+                stack = stack[:-index-1]+stack[-index:]+[stack[-index-1]]
+            elif current_action=="D":
+                stack.append(stack[-1])
+            elif current_action==":":
+                sign= max(min(stack[-1],1),-1)
+                stack = stack[:-1]
+                if sign!=0:
+                    movx,movy = -movy * sign, movx * sign
+            elif current_action=="I":
+                printed_str+=str(stack[-1])
+                stack = stack[:-1]
+            elif current_action=="C":
+                printed_str+=chr(stack[-1])
+                stack = stack[:-1]
+            
+            px+=movx
+            py+=movy
+            moves+=1
+
+            if px>=TABLE_MAX_WIDTH or py>=TABLE_MAX_HEIGHT or px<0 or py<0:
+                print("OUT OF BOUNDS:",number)
+                self.heatmap[py-movy][px-movx]=-1
+                return -1
+        
+            if moves>MAX_MOVES_ALLOWED:
+                print("MAXIMUM TURNS REACHED:",number)
+                self.heatmap[py-movy][px-movx]=-1
+                return -1
+
+            current_action = self.table[py][px]
+            if self.heatmap[py][px]>=0:
+                self.heatmap[py][px]+=1
+                self.max_heatmap = max(self.heatmap[py][px],self.max_heatmap)
+
+        #check print string (set -1)
+        if printed_str!=expected:
+            moves=-1
+            #self.fails.append((number, expected, printed_str))
+            self.heatmap[py][px]=-1
+
+        return moves
+
