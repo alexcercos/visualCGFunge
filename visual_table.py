@@ -90,6 +90,22 @@ class VisualCGFungeTable:
         if self.hover_col>=TABLE_MAX_WIDTH or self.hover_row>=TABLE_MAX_HEIGHT or self.hover_col<0 or self.hover_row<0:
             self.hover_col, self.hover_row = None, None
     
+    def draw_empty_square(self, color, line_width, size, x, y):
+        pygame.draw.rect(self.screen, color, (x, y, size, size), line_width)
+
+    def draw_cell(self, row, col):
+        num = self.cgfunge.heatmap[row][col]
+        char = self.cgfunge.table[row][col]
+        color = self.get_color(num)
+        
+        # Draw the cell background
+        pygame.draw.rect(self.screen, color, (col * self.cell_size, row * self.cell_size, self.cell_size, self.cell_size))
+        
+        # Draw the character
+        text_surface = self.font.render(char, True, (0, 0, 0))
+        text_rect = text_surface.get_rect(center=((col * self.cell_size) + self.cell_size // 2, (row * self.cell_size) + self.cell_size // 2))
+        self.screen.blit(text_surface, text_rect)
+
     def redraw_complete(self):
         if not self.redraw: return
 
