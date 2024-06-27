@@ -286,10 +286,14 @@ class VisualCGFungeTable:
     def set_active_element(self, pos):
         if self.input_box.collidepoint(pos):
             self.input_active = True
+            self.input_border_color = (0,255,255)
             self.active_cell = None
+            self.render_input()
+            pygame.display.flip()
             return
         
         self.input_active = False
+        self.input_border_color = (255,255,255)
 
         x,y = pos
         x//=self.cell_size
