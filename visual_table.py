@@ -335,13 +335,17 @@ class VisualCGFungeTable:
 
             elif event.type == pygame.KEYDOWN:
                 
-                #ENTER
-                if event.key == pygame.K_RETURN:
-                    self.keyenter_press()
-                
                 #CTRL + key
-                elif (pygame.key.get_mods() & pygame.KMOD_CTRL or pygame.key.get_mods() & pygame.KMOD_META):
-                    if event.key == pygame.K_v:
+                if (pygame.key.get_mods() & pygame.KMOD_CTRL or pygame.key.get_mods() & pygame.KMOD_META):
+                
+                    #CTRL+ENTER
+                    if event.key == pygame.K_RETURN:
+                        self.run_simulation()
+
+                    #CTRL C TODO -> ctrl shift C = copy all
+                    #CTRL SHIFT V -> paste directly
+                
+                    elif event.key == pygame.K_v:
                         self.paste_clipboard_input()
                     
                     elif event.key == pygame.K_z:
@@ -372,6 +376,10 @@ class VisualCGFungeTable:
                     self.move_active_cell(0,1)
                 elif event.key == pygame.K_UP:
                     self.move_active_cell(0,-1)
+
+                #ENTER
+                elif event.key == pygame.K_RETURN:
+                    self.keyenter_press()
 
                 #BACKSPACE
                 elif event.key == pygame.K_BACKSPACE:
