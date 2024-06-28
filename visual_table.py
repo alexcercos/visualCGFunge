@@ -8,6 +8,8 @@ class VisualCGFungeTable:
         pygame.init()
         self.MIN_CELL_SIZE, self.MAX_CELL_SIZE = 10, 40
         self.UNDO_STACK_SIZE = 64
+        self.TOOLTIP_SIZE = 10
+        self.TOOLTIP_DISP = 2
 
         self.cell_size = 20
 
@@ -39,6 +41,8 @@ class VisualCGFungeTable:
         self.hover_row, self.hover_col = None, None
         self.running = True
         self.mouse_x, self.mouse_y = 0,0
+        self.tooltip_pos = dict()
+        self.tooltip_curr_limit = 0 #number of rows displayed now
 
         self.input_border_color = (255,255,255)
 
@@ -145,6 +149,7 @@ class VisualCGFungeTable:
     def run_simulation(self):
         self.cgfunge.reset_heatmap()
         self.cgfunge.reset_annotations()
+        self.tooltip_pos.clear()
 
         self.score = 0
         self.valid_pct = 0
@@ -198,8 +203,6 @@ class VisualCGFungeTable:
         pct_surface = self.score_font.render(f"{self.valid_pct}%", True, (255, 255, 255))
         pct_rect = pct_surface.get_rect(topleft=(score_box.x+5, score_box.y+self.INPUT_HEIGHT//2))
         self.screen.blit(pct_surface, pct_rect)
-
-
 
     def redraw_complete(self):
         if not self.redraw: return
@@ -257,8 +260,20 @@ class VisualCGFungeTable:
             for n,p,e in fails:
                 lines.append(f"{n}: '{p}' ('{e}')")
 
+
+        self.tooltip_curr_limit = len(lines)
+        displace = 0
+
+        if self.tooltip_curr_limit>0:
+
+            cell = (self.hover_row, self.hover_col)
+            
+            if cell in self.tooltip_pos:
+                displace = self.tooltip_pos[cell]%self.tooltip_curr_limit
+        #print("->",displace,self.tooltip_curr_limit)
+
         # Render each line and calculate the overall size of the tooltip
-        rendered_lines = [self.tooltip_font.render(line, True, (255, 255, 255)) for line in lines]
+        rendered_lines = [self.tooltip_font.render(line, True, (255, 255, 255)) for line in [text]+lines[displace:displace+self.TOOLTIP_SIZE]]
         max_width = max(line.get_width() for line in rendered_lines)
         total_height = sum(line.get_height() for line in rendered_lines)
 
@@ -395,7 +410,37 @@ class VisualCGFungeTable:
             elif event.type == pygame.VIDEORESIZE:
                 self.resize_screen(event.w, event.h)
 
+            elif event.type == pygame.MOUSEWHEEL:
+
+                if self.hover_row is None or self.hover_col is None:
+                    continue
+                
+                if self.tooltip_curr_limit<=self.TOOLTIP_SIZE:
+                    continue
+                
+                cell = (self.hover_row, self.hover_col)
+
+                curr = 0
+                if cell in self.tooltip_pos:
+                    curr = self.tooltip_pos[cell]
+                
+                tpos = curr - self.TOOLTIP_DISP*event.y
+                if tpos<0:
+                    if curr==0:
+                        tpos = max(0,self.tooltip_curr_limit-self.TOOLTIP_SIZE)
+                    else:
+                        tpos = 0
+                elif tpos>self.tooltip_curr_limit-self.TOOLTIP_SIZE+self.TOOLTIP_DISP-1:
+                    tpos = 0
+                self.tooltip_pos[cell]=tpos
+
+                self.render_tooltip()
+                self.redraw = True
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                
+                if event.button!=1:
+                    continue
 
                 self.set_active_element(event.pos)
 
