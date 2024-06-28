@@ -20,7 +20,7 @@ class VisualCGFungeTable:
         self.MARGIN = 5
 
         self.screen = pygame.display.set_mode((self.MARGIN*2+TABLE_MAX_WIDTH * self.cell_size, self.MARGIN*2+TABLE_MAX_HEIGHT * self.cell_size + self.INPUT_HEIGHT), pygame.RESIZABLE)
-        pygame.display.set_caption("Visual CGFunge")
+        pygame.display.set_caption("Visual CGFunge by alexcercos")
 
         self.button_boxes = [None]*3
         for i in range(3):
