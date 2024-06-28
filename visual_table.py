@@ -394,6 +394,7 @@ class VisualCGFungeTable:
             return
 
         if self.active_cell == (x,y):
+            self.selection_cell_end = None
             return
         if self.selection_cell_end == (x,y):
             return
@@ -592,7 +593,20 @@ class VisualCGFungeTable:
                             self.send_to_clipboard()
                         elif self.active_cell:
                             x,y = self.active_cell
-                            self.send_to_clipboard(self.cgfunge.table[y][x])
+                            if self.selection_cell_end:
+                                x2,y2 = self.selection_cell_end
+                                xi=min(x,x2)
+                                xe=max(x,x2)+1
+                                yi=min(y,y2)
+                                ye=max(y,y2)+1
+                                content=""
+                                for r in range(yi,ye):
+                                    for c in range(xi,xe):
+                                        content+=self.cgfunge.table[r][c]
+                                    content+="\n"
+                                self.send_to_clipboard(content[:-2])
+                            else:
+                                self.send_to_clipboard(self.cgfunge.table[y][x])
                 
                     #CTRL+V
                     elif event.key == pygame.K_v:
