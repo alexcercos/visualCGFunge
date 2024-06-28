@@ -278,8 +278,14 @@ class VisualCGFungeTable:
         total_height = sum(line.get_height() for line in rendered_lines)
 
         # Position the tooltip
-        tooltip_x = self.mouse_x + 15
-        tooltip_y = self.mouse_y
+        if self.mouse_x > self.screen.get_width() - max_width - 15:
+            tooltip_x = self.mouse_x - 15 - max_width
+        else:
+            tooltip_x = self.mouse_x + 15
+        if self.mouse_y > self.screen.get_height() - total_height - self.INPUT_HEIGHT - self.MARGIN:
+            tooltip_y = self.mouse_y - total_height
+        else:
+            tooltip_y = self.mouse_y
         trect = pygame.Rect(tooltip_x, tooltip_y, max_width + 4, total_height + 4)
 
         # Draw the background rectangle
