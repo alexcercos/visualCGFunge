@@ -14,6 +14,7 @@ class VisualCGFungeTable:
         self.INPUT_HEIGHT = 40
         self.BUTTON_WIDTH = 50
         self.BUTTON_HEIGHT = 30
+        self.SCORE_WIDTH = 75
         self.MARGIN = 5
 
         self.screen = pygame.display.set_mode((self.MARGIN*2+TABLE_MAX_WIDTH * self.cell_size, self.MARGIN*2+TABLE_MAX_HEIGHT * self.cell_size + self.INPUT_HEIGHT), pygame.RESIZABLE)
@@ -26,6 +27,7 @@ class VisualCGFungeTable:
         self.font = pygame.font.SysFont("Arial", self.cell_size-2)
         self.input_font = pygame.font.SysFont("Consolas", 22)
         self.tooltip_font = pygame.font.SysFont("Consolas", 15)
+        self.score_font = pygame.font.SysFont("Consolas", 15)
 
         self.cgfunge = CGFungeTable()
 
@@ -47,6 +49,9 @@ class VisualCGFungeTable:
         self.undo_index = 0
         self.undo_bottom = 0
         self.undo_top = 0
+
+        self.score = 0
+        self.valid_pct = 0
     
     def get_table_string(self):
         return "\n".join(["".join(r).rstrip() for r in self.cgfunge.table]).rstrip()
@@ -141,10 +146,15 @@ class VisualCGFungeTable:
         self.cgfunge.reset_heatmap()
         self.cgfunge.reset_annotations()
 
-        total = 0
+        self.score = 0
+        self.valid_pct = 0
         for n,r in validators:
-            total+= self.cgfunge.simulate(n,r)
-        print(total)
+            res = self.cgfunge.simulate(n,r)
+            if res>0:
+                self.score+=res
+                self.valid_pct+=1
+
+        self.render_score()
         self.redraw = True
 
     def draw_cell(self, row, col):
@@ -162,7 +172,7 @@ class VisualCGFungeTable:
 
     def render_input(self):
 
-        self.input_box = pygame.Rect(10, TABLE_MAX_HEIGHT * self.cell_size + self.MARGIN*2, self.screen.get_width() - self.BUTTON_WIDTH*3 - 20, self.BUTTON_HEIGHT)
+        self.input_box = pygame.Rect(self.SCORE_WIDTH, TABLE_MAX_HEIGHT * self.cell_size + self.MARGIN*2, self.screen.get_width() - self.BUTTON_WIDTH*3 - 20 - self.SCORE_WIDTH, self.BUTTON_HEIGHT)
 
         pygame.draw.rect(self.screen, (0, 0, 0), self.input_box)
         # Draw the input box border
@@ -172,6 +182,24 @@ class VisualCGFungeTable:
         # Draw the updated text in the input box
         inp_rect = text_surface.get_rect(topleft=(self.input_box.x + 5, self.input_box.y + 5))
         self.screen.blit(text_surface, inp_rect)
+
+        self.render_score()
+
+    def render_score(self):
+        score_box = pygame.Rect(0,TABLE_MAX_HEIGHT * self.cell_size + self.MARGIN*2, self.SCORE_WIDTH, self.INPUT_HEIGHT)
+
+        pygame.draw.rect(self.screen, (0, 0, 0), score_box)
+        
+        #write
+        sc_surface = self.score_font.render(str(self.score), True, (255, 255, 255))
+        sc_rect = sc_surface.get_rect(topleft=(score_box.x+5, score_box.y))
+        self.screen.blit(sc_surface, sc_rect)
+
+        pct_surface = self.score_font.render(f"{self.valid_pct}%", True, (255, 255, 255))
+        pct_rect = pct_surface.get_rect(topleft=(score_box.x+5, score_box.y+self.INPUT_HEIGHT//2))
+        self.screen.blit(pct_surface, pct_rect)
+
+
 
     def redraw_complete(self):
         if not self.redraw: return
