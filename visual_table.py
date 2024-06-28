@@ -16,21 +16,21 @@ class VisualCGFungeTable:
 
         self.cell_size = 20
 
-        self.INPUT_HEIGHT = 40
         self.BUTTON_WIDTH = 50
         self.BUTTON_HEIGHT = 30
         self.SCORE_WIDTH = 75
         self.MARGIN = 5
 
-        self.screen = pygame.display.set_mode((self.MARGIN*2+TABLE_MAX_WIDTH * self.cell_size, self.MARGIN*2+TABLE_MAX_HEIGHT * self.cell_size + self.INPUT_HEIGHT), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((self.MARGIN*2+TABLE_MAX_WIDTH * self.cell_size, self.MARGIN*2+TABLE_MAX_HEIGHT * self.cell_size + self.BUTTON_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption("Visual CGFunge by alexcercos")
 
-        self.button_boxes = [None]*3
-        for i in range(3):
-            self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(3-i) - 10, TABLE_MAX_HEIGHT * self.cell_size+self.MARGIN*2, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+        self.BUTTON_AMOUNT = 2
+        self.button_boxes = [None]*self.BUTTON_AMOUNT
+        for i in range(self.BUTTON_AMOUNT):
+            self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(self.BUTTON_AMOUNT-i) - 10, TABLE_MAX_HEIGHT * self.cell_size+self.MARGIN*2, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
 
         self.font = pygame.font.SysFont("Arial", self.cell_size-2)
-        self.input_font = pygame.font.SysFont("Consolas", 22)
+        self.button_font = pygame.font.SysFont("Consolas", 22)
         self.tooltip_font = pygame.font.SysFont("Consolas", 15)
         self.score_font = pygame.font.SysFont("Consolas", 15)
 
@@ -43,15 +43,11 @@ class VisualCGFungeTable:
         self.selection_cell_end = None
         self.mouse_drag = False
 
-        self.input_active = False
-        self.input_text = ''
         self.hover_row, self.hover_col = None, None
         self.running = True
         self.mouse_x, self.mouse_y = 0,0
         self.tooltip_pos = dict()
         self.tooltip_curr_limit = 0 #number of rows displayed now
-
-        self.input_border_color = (255,255,255)
 
         self.ctrl_stored_nums=""
 
@@ -126,28 +122,27 @@ class VisualCGFungeTable:
         data = self.get_clipboard()
         if not data: return
 
-        if self.input_active:
-            self.input_text+=data
-            self.redraw = True
-        elif self.active_cell:
-            lines = data.replace("\r"," ").split("\n")
-            x,y = self.active_cell
+        if not self.active_cell:
+            return
 
-            max_len = 0
-            for l in lines:
-                max_len=max(max_len, len(l))
-            
-            max_len = min(max_len,TABLE_MAX_WIDTH-x)
+        lines = data.replace("\r"," ").split("\n")
+        x,y = self.active_cell
 
-            for li in range(min(len(lines),TABLE_MAX_HEIGHT-y)):
-                for ci in range(max_len):
-                    if ci<len(lines[li]):
-                        self.cgfunge.table[y+li][x+ci] = lines[li][ci]
-                    else:
-                        self.cgfunge.table[y+li][x+ci] = " "
+        max_len = 0
+        for l in lines:
+            max_len=max(max_len, len(l))
+        
+        max_len = min(max_len,TABLE_MAX_WIDTH-x)
 
-            self.add_undo_state()
-            self.redraw = True
+        for li in range(min(len(lines),TABLE_MAX_HEIGHT-y)):
+            for ci in range(max_len):
+                if ci<len(lines[li]):
+                    self.cgfunge.table[y+li][x+ci] = lines[li][ci]
+                else:
+                    self.cgfunge.table[y+li][x+ci] = " "
+
+        self.add_undo_state()
+        self.redraw = True
 
     def determine_hovers(self):
         mx,my = pygame.mouse.get_pos()
@@ -197,23 +192,8 @@ class VisualCGFungeTable:
         text_rect = text_surface.get_rect(center=((self.MARGIN + col * self.cell_size) + self.cell_size // 2, (self.MARGIN + row * self.cell_size) + self.cell_size // 2))
         self.screen.blit(text_surface, text_rect)
 
-    def render_input(self):
-
-        self.input_box = pygame.Rect(self.SCORE_WIDTH, TABLE_MAX_HEIGHT * self.cell_size + self.MARGIN*2, self.screen.get_width() - self.BUTTON_WIDTH*3 - 20 - self.SCORE_WIDTH, self.BUTTON_HEIGHT)
-
-        pygame.draw.rect(self.screen, (0, 0, 0), self.input_box)
-        # Draw the input box border
-        pygame.draw.rect(self.screen, self.input_border_color, self.input_box, 2)
-
-        text_surface = self.input_font.render(self.input_text, True, (255, 255, 255))
-        # Draw the updated text in the input box
-        inp_rect = text_surface.get_rect(topleft=(self.input_box.x + 5, self.input_box.y + 5))
-        self.screen.blit(text_surface, inp_rect)
-
-        self.render_score()
-
     def render_score(self):
-        score_box = pygame.Rect(0,TABLE_MAX_HEIGHT * self.cell_size + self.MARGIN*2, self.SCORE_WIDTH, self.INPUT_HEIGHT)
+        score_box = pygame.Rect(0,TABLE_MAX_HEIGHT * self.cell_size + self.MARGIN*2, self.SCORE_WIDTH, self.BUTTON_HEIGHT)
 
         pygame.draw.rect(self.screen, (0, 0, 0), score_box)
         
@@ -223,7 +203,7 @@ class VisualCGFungeTable:
         self.screen.blit(sc_surface, sc_rect)
 
         pct_surface = self.score_font.render(f"{self.valid_pct}%", True, (255, 255, 255))
-        pct_rect = pct_surface.get_rect(topleft=(score_box.x+5, score_box.y+self.INPUT_HEIGHT//2))
+        pct_rect = pct_surface.get_rect(topleft=(score_box.x+5, score_box.y+self.BUTTON_HEIGHT//2))
         self.screen.blit(pct_surface, pct_rect)
 
     def redraw_complete(self):
@@ -237,16 +217,16 @@ class VisualCGFungeTable:
             for col in range(TABLE_MAX_WIDTH):
                 self.draw_cell(row, col)
 
-        self.render_input()
+        self.render_score()
 
         # Draw the submit button
-        buttons = ["Load","Copy","Run"]
-        b_colors = [(196,196,196),(255,255,196),(64,255,255)]
+        buttons = ["Copy","Run"]
+        b_colors = [(255,255,196),(64,255,255)]
 
-        for i in range(3):
+        for i in range(self.BUTTON_AMOUNT):
 
             pygame.draw.rect(self.screen, b_colors[i], self.button_boxes[i])
-            button_text = self.input_font.render(buttons[i], True, (0, 0, 0))
+            button_text = self.button_font.render(buttons[i], True, (0, 0, 0))
             button_rect = button_text.get_rect(center=self.button_boxes[i].center)
             self.screen.blit(button_text, button_rect)
 
@@ -306,7 +286,7 @@ class VisualCGFungeTable:
             tooltip_x = self.mouse_x - 15 - max_width
         else:
             tooltip_x = self.mouse_x + 15
-        if self.mouse_y > self.screen.get_height() - total_height - self.INPUT_HEIGHT - self.MARGIN:
+        if self.mouse_y > self.screen.get_height() - total_height - self.BUTTON_HEIGHT - self.MARGIN:
             tooltip_y = self.mouse_y - total_height
         else:
             tooltip_y = self.mouse_y
@@ -318,57 +298,43 @@ class VisualCGFungeTable:
         # Blit each line of text onto the screen
         for i, line_surface in enumerate(rendered_lines):
             self.screen.blit(line_surface, (tooltip_x + 2, tooltip_y + 2 + i * line_surface.get_height()))
-
-    def load_input_text(self):
-
-        self.cgfunge.set_table_from_text(self.input_text)
-        self.input_text = ''
-        self.redraw = True
     
     def clear_all(self):
-        if self.input_active:
-            self.input_text = ""
-        else:
-            self.cgfunge.reset_heatmap()
-            self.cgfunge.reset()
+        self.cgfunge.reset_heatmap()
+        self.cgfunge.reset()
         
         self.redraw = True
 
     def backspace_press(self):
-        if self.input_active:
-            self.input_text = self.input_text[:-1]
-            self.render_input()
-        elif self.active_cell:
+        if not self.active_cell:
+            return
+    
+        x,y = self.active_cell
+        if self.selection_cell_end:
+            x2,y2 = self.selection_cell_end
+            xi=min(x,x2)
+            xe=max(x,x2)+1
+            yi=min(y,y2)
+            ye=max(y,y2)+1
 
-            x,y = self.active_cell
-            if self.selection_cell_end:
-                x2,y2 = self.selection_cell_end
-                xi=min(x,x2)
-                xe=max(x,x2)+1
-                yi=min(y,y2)
-                ye=max(y,y2)+1
+            for r in range(yi,ye):
+                for c in range(xi,xe):
+                    self.cgfunge.table[r][c] = " "
 
-                for r in range(yi,ye):
-                    for c in range(xi,xe):
-                        self.cgfunge.table[r][c] = " "
-  
-            else:
-                self.cgfunge.table[y][x] = " "
+        else:
+            self.cgfunge.table[y][x] = " "
 
-            self.add_undo_state()
-            self.redraw = True
+        self.add_undo_state()
+        self.redraw = True
 
     def keyenter_press(self,is_shift):
-        if self.input_active:
-            self.load_input_text()
-        elif self.active_cell:
+        if self.active_cell:
             self.move_active_cell(0,-1 if is_shift else 1)
     
     def generic_key_press(self, unicode):
         if not unicode:return
-        if self.input_active:
-            self.input_text += unicode
-        elif self.active_cell:
+
+        if self.active_cell:
             x,y = self.active_cell
             self.cgfunge.table[y][x] = unicode[0]
         
@@ -389,16 +355,16 @@ class VisualCGFungeTable:
 
         # Calculate new cell size maintaining aspect ratio
         cell_width = self.screen.get_width() // TABLE_MAX_WIDTH
-        cell_height = (self.screen.get_height() - self.INPUT_HEIGHT) // TABLE_MAX_HEIGHT
+        cell_height = (self.screen.get_height() - self.BUTTON_HEIGHT) // TABLE_MAX_HEIGHT
         self.cell_size = max(self.MIN_CELL_SIZE, min(cell_width, cell_height, self.MAX_CELL_SIZE))
         self.font = pygame.font.SysFont("Arial", self.cell_size-2)
 
-        for i in range(3):
-            self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(3-i) - 10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+        for i in range(self.BUTTON_AMOUNT):
+            self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(self.BUTTON_AMOUNT-i) - 10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
 
     def set_select_cell(self, pos):
         if not self.active_cell:
-            self.set_active_element()
+            self.set_active_element(pos)
             return
         
         x,y = pos
@@ -422,16 +388,6 @@ class VisualCGFungeTable:
 
     def set_active_element(self, pos):
         self.selection_cell_end = None
-        if self.input_box.collidepoint(pos):
-            self.input_active = True
-            self.input_border_color = (0,255,255)
-            self.active_cell = None
-            self.render_input()
-            pygame.display.flip()
-            return
-        
-        self.input_active = False
-        self.input_border_color = (255,255,255)
 
         x,y = pos
         x-=self.MARGIN
@@ -538,15 +494,11 @@ class VisualCGFungeTable:
                     self.set_select_cell(event.pos)
                 else:
                     self.set_active_element(event.pos)
-
-                if self.button_boxes[0].collidepoint(event.pos):
-                    self.load_input_text()
-                    self.add_undo_state()
                 
-                if self.button_boxes[1].collidepoint(event.pos):
+                if self.button_boxes[0].collidepoint(event.pos):
                     self.send_to_clipboard()
                 
-                if self.button_boxes[2].collidepoint(event.pos):
+                if self.button_boxes[1].collidepoint(event.pos):
                     self.run_simulation()
             
             elif event.type == pygame.MOUSEBUTTONUP:
