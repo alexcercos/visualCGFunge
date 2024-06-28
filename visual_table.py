@@ -228,6 +228,7 @@ class VisualCGFungeTable:
             button_rect = button_text.get_rect(center=self.button_boxes[i].center)
             self.screen.blit(button_text, button_rect)
 
+        self.render_hover_cell()
         self.render_highlight_cell()
 
         self.render_tooltip()
@@ -384,6 +385,12 @@ class VisualCGFungeTable:
             return
         x,y = self.active_cell
         self.draw_empty_square((0,0,255), 2, self.cell_size, x*self.cell_size, y*self.cell_size)
+
+    def render_hover_cell(self):
+        if self.hover_col==None or self.hover_row==None:
+            return
+        x,y = self.hover_col,self.hover_row
+        self.draw_empty_square((64,64,64), 2, self.cell_size, x*self.cell_size, y*self.cell_size)
 
     def add_undo_state(self):
         self.undo_index = (self.undo_index+1)%self.UNDO_STACK_SIZE
