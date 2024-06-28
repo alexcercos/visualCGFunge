@@ -35,7 +35,11 @@ class VisualCGFungeTable:
 
         #Control variables
         self.redraw = True
+        
         self.active_cell = None
+        self.selection_cell_end = None
+        self.mouse_drag = False
+
         self.input_active = False
         self.input_text = ''
         self.hover_row, self.hover_col = None, None
@@ -157,8 +161,8 @@ class VisualCGFungeTable:
         
         self.redraw = True
     
-    def draw_empty_square(self, color, line_width, size, x, y):
-        pygame.draw.rect(self.screen, color, (self.MARGIN + x, self.MARGIN + y, size, size), line_width)
+    def draw_empty_square(self, color, line_width, width, height, x, y):
+        pygame.draw.rect(self.screen, color, (self.MARGIN + x, self.MARGIN + y, width, height), line_width)
         self.redraw = True
 
     def run_simulation(self):
@@ -243,6 +247,7 @@ class VisualCGFungeTable:
             button_rect = button_text.get_rect(center=self.button_boxes[i].center)
             self.screen.blit(button_text, button_rect)
 
+        self.render_selection_squares()
         self.render_hover_cell()
         self.render_highlight_cell()
 
@@ -353,6 +358,7 @@ class VisualCGFungeTable:
     
     def move_active_cell(self,movx,movy):
         if not self.active_cell: return
+        self.selection_cell_end = None
         x,y = self.active_cell
 
         self.active_cell = ((x+movx)%TABLE_MAX_WIDTH,(y+movy)%TABLE_MAX_HEIGHT)
@@ -372,7 +378,31 @@ class VisualCGFungeTable:
         for i in range(3):
             self.button_boxes[i] = pygame.Rect(self.screen.get_width() - self.BUTTON_WIDTH*(3-i) - 10, TABLE_MAX_HEIGHT * self.cell_size + 5, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
 
+    def set_select_cell(self, pos):
+        if not self.active_cell:
+            self.set_active_element()
+            return
+        
+        x,y = pos
+        x-=self.MARGIN
+        y-=self.MARGIN
+        x//=self.cell_size
+        y//=self.cell_size
+
+        if x<0 or x>=TABLE_MAX_WIDTH or y<0 or y>=TABLE_MAX_HEIGHT:
+            self.selection_cell_end = None
+            return
+
+        if self.active_cell == (x,y):
+            return
+        if self.selection_cell_end == (x,y):
+            return
+
+        self.selection_cell_end = (x,y)
+        self.redraw = True
+
     def set_active_element(self, pos):
+        self.selection_cell_end = None
         if self.input_box.collidepoint(pos):
             self.input_active = True
             self.input_border_color = (0,255,255)
@@ -400,13 +430,25 @@ class VisualCGFungeTable:
         if not self.active_cell:
             return
         x,y = self.active_cell
-        self.draw_empty_square((0,0,255), 2, self.cell_size, x*self.cell_size, y*self.cell_size)
+        self.draw_empty_square((0,0,255), 2, self.cell_size, self.cell_size, x*self.cell_size, y*self.cell_size)
+    
+    def render_selection_squares(self):
+        if not self.selection_cell_end:
+            return
+        
+        x1,y1 = self.active_cell
+        x2,y2 = self.selection_cell_end
+
+        xi = min(x1,x2)
+        yi = min(y1,y2)
+    
+        self.draw_empty_square((0,128,128), 3, self.cell_size * (1+abs(x1-x2)), self.cell_size * (1+abs(y1-y2)), xi*self.cell_size, yi*self.cell_size)
 
     def render_hover_cell(self):
         if self.hover_col==None or self.hover_row==None:
             return
         x,y = self.hover_col,self.hover_row
-        self.draw_empty_square((64,64,64), 2, self.cell_size, x*self.cell_size, y*self.cell_size)
+        self.draw_empty_square((64,64,64), 2, self.cell_size, self.cell_size, x*self.cell_size, y*self.cell_size)
 
     def add_undo_state(self):
         self.undo_index = (self.undo_index+1)%self.UNDO_STACK_SIZE
@@ -470,8 +512,13 @@ class VisualCGFungeTable:
                 
                 if event.button!=1:
                     continue
-
-                self.set_active_element(event.pos)
+                self.mouse_drag = True
+                
+                #Shift + click
+                if (pygame.key.get_mods() & pygame.KMOD_SHIFT):
+                    self.set_select_cell(event.pos)
+                else:
+                    self.set_active_element(event.pos)
 
                 if self.button_boxes[0].collidepoint(event.pos):
                     self.load_input_text()
@@ -482,6 +529,18 @@ class VisualCGFungeTable:
                 
                 if self.button_boxes[2].collidepoint(event.pos):
                     self.run_simulation()
+            
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button!=1:
+                    continue
+                self.mouse_drag = False
+
+            elif event.type == pygame.MOUSEMOTION:
+                if not self.mouse_drag:
+                    continue
+                
+                self.set_select_cell(event.pos)
+            
 
             elif event.type == pygame.KEYDOWN:
 
@@ -592,6 +651,7 @@ class VisualCGFungeTable:
                 
                 elif event.key == pygame.K_ESCAPE:
                     self.active_cell = None
+                    self.selection_cell_end = None
                     self.redraw = True
                 
                 #REST OF KEYS
