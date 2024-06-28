@@ -574,7 +574,7 @@ class VisualCGFungeTable:
                                     for c in range(xi,xe):
                                         content+=self.cgfunge.table[r][c]
                                     content+="\n"
-                                self.send_to_clipboard(content[:-2])
+                                self.send_to_clipboard(content[:-1])
                             else:
                                 self.send_to_clipboard(self.cgfunge.table[y][x])
                 
