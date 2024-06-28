@@ -262,7 +262,7 @@ class VisualCGFungeTable:
             fails = d["fails"]
             
             for n,p,e in fails:
-                lines.append(f"{n}: '{p}' ('{e}')")
+                lines.append(f"{n}: '{p}' ('{e}')".replace("\0","\\0")) #Avoid null characters
 
 
         self.tooltip_curr_limit = len(lines)

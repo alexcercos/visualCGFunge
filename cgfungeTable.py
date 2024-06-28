@@ -154,6 +154,11 @@ class CGFungeTable:
                 printed_str+=str(stack[-1])
                 stack = stack[:-1]
             elif current_action=="C":
+                if stack[-1]<0:
+                    if "error" not in self.annotations[py][px]: self.annotations[py][px]["error"] = []
+                    self.annotations[py][px]["error"].append((number, "NEGATIVE CHAR OUTPUT"))
+                    self.heatmap[py][px]=-1
+                    return -1
                 printed_str+=chr(stack[-1])
                 stack = stack[:-1]
             
