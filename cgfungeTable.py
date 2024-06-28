@@ -190,3 +190,5 @@ class CGFungeTable:
 
         return moves
 
+if __name__=="__main__":
+    input("You need to execute 'visual_table.py' (this program is a dependency). Press enter to finish the program.")
