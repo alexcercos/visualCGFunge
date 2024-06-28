@@ -336,8 +336,8 @@ class VisualCGFungeTable:
             self.input_text = self.input_text[:-1]
             self.render_input()
         elif self.active_cell:
-            x,y = self.active_cell
-            self.cgfunge.table[y][x] = " "
+            self.generic_key_press(" ")
+            self.add_undo_state()
             self.redraw = True
 
     def keyenter_press(self,is_shift):
