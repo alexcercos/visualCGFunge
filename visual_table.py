@@ -306,6 +306,7 @@ class VisualCGFungeTable:
         if self.input_active:
             self.input_text = ""
         else:
+            self.cgfunge.reset_heatmap()
             self.cgfunge.reset()
         
         self.redraw = True

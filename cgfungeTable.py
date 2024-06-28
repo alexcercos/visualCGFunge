@@ -52,7 +52,6 @@ class CGFungeTable:
             self.table[e] = [" "]*TABLE_MAX_WIDTH
         
         self.reset_annotations()
-        self.reset_heatmap()
 
     def to_int32(self,num):
         num = num & 0xffffffff
