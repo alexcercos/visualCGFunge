@@ -2,6 +2,9 @@ import pygame
 import win32clipboard #pywin32
 from cgfungeTable import CGFungeTable, TABLE_MAX_HEIGHT, TABLE_MAX_WIDTH
 from test_cases import validators
+#-> to include other set of validators, you can comment the previous line
+#   and include another file with an array named "validators" with the same format [(N,"expected result"), ...]
+# from other_custom_file import validators
 
 class VisualCGFungeTable:
     def __init__(self):
