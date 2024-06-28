@@ -1,5 +1,3 @@
-import numpy as np
-import random as rn
 
 TABLE_MAX_HEIGHT = 30
 TABLE_MAX_WIDTH = 40
