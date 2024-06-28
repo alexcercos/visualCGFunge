@@ -123,8 +123,23 @@ class VisualCGFungeTable:
             self.input_text+=data
             self.redraw = True
         elif self.active_cell:
+            lines = data.replace("\r"," ").split("\n")
             x,y = self.active_cell
-            self.cgfunge.table[y][x] = data[0]
+
+            max_len = 0
+            for l in lines:
+                max_len=max(max_len, len(l))
+            
+            max_len = min(max_len,TABLE_MAX_WIDTH-x)
+
+            for li in range(min(len(lines),TABLE_MAX_HEIGHT-y)):
+                for ci in range(max_len):
+                    if ci<len(lines[li]):
+                        self.cgfunge.table[y+li][x+ci] = lines[li][ci]
+                    else:
+                        self.cgfunge.table[y+li][x+ci] = " "
+
+            self.add_undo_state()
             self.redraw = True
 
     def determine_hovers(self):
