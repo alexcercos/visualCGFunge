@@ -106,7 +106,7 @@ class VisualCGFungeTable:
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
         if custom_text:
-            win32clipboard.SetClipboardText(custom_text)
+            win32clipboard.SetClipboardText(custom_text, win32clipboard.CF_UNICODETEXT)
         else:
             win32clipboard.SetClipboardText(self.get_table_string(), win32clipboard.CF_UNICODETEXT)
         win32clipboard.CloseClipboard()
