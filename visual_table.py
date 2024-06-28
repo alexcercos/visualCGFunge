@@ -247,7 +247,7 @@ class VisualCGFungeTable:
         letter = self.cgfunge.table[self.hover_row][self.hover_col]
         text = f"{letter} ({ord(letter)})"
         #text+=f" -> {self.cgfunge.heatmap[self.hover_row][self.hover_col]}"
-        lines = [text]
+        lines = []
 
         if "error" in d:
             errors = d["error"]

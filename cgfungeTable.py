@@ -69,7 +69,7 @@ class CGFungeTable:
         stack = [number]
         current_action = self.table[py][px]
         if self.heatmap[py][px]>=0:
-            self.heatmap[py][px]=9 #Fix also
+            self.heatmap[py][px]+=1
             self.max_heatmap = max(self.heatmap[py][px],self.max_heatmap)
         printed_str=""
         while ignore_next or str_mode or current_action!="E":
@@ -176,7 +176,7 @@ class CGFungeTable:
 
             current_action = self.table[py][px]
             if self.heatmap[py][px]>=0:
-                self.heatmap[py][px]=9 #Changing this correctly may give you a competitive edge (Ssshh ;) )
+                self.heatmap[py][px]+=1
                 self.max_heatmap = max(self.heatmap[py][px],self.max_heatmap)
 
         #check print string (set -1)
