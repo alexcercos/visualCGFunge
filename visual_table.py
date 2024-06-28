@@ -336,7 +336,22 @@ class VisualCGFungeTable:
             self.input_text = self.input_text[:-1]
             self.render_input()
         elif self.active_cell:
-            self.generic_key_press(" ")
+
+            x,y = self.active_cell
+            if self.selection_cell_end:
+                x2,y2 = self.selection_cell_end
+                xi=min(x,x2)
+                xe=max(x,x2)+1
+                yi=min(y,y2)
+                ye=max(y,y2)+1
+
+                for r in range(yi,ye):
+                    for c in range(xi,xe):
+                        self.cgfunge.table[r][c] = " "
+  
+            else:
+                self.cgfunge.table[y][x] = " "
+
             self.add_undo_state()
             self.redraw = True
 
