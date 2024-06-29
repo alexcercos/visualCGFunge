@@ -50,8 +50,6 @@ class CGFungeTable:
         
         for e in range(i+1,TABLE_MAX_HEIGHT):
             self.table[e] = [" "]*TABLE_MAX_WIDTH
-        
-        self.reset_annotations()
 
     def to_int32(self,num):
         num = num & 0xffffffff
