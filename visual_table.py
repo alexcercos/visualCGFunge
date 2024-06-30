@@ -188,7 +188,7 @@ class VisualCGFungeTable:
         pygame.draw.rect(self.screen, color, (self.MARGIN + col * self.cell_size, self.MARGIN+row * self.cell_size, self.cell_size, self.cell_size))
         
         # Draw the character
-        text_surface = self.font.render(char, True, (0, 0, 0))
+        text_surface = self.font.render(char.encode('utf-8', 'replace').decode(), True, (0, 0, 0))
         text_rect = text_surface.get_rect(center=((self.MARGIN + col * self.cell_size) + self.cell_size // 2, (self.MARGIN + row * self.cell_size) + self.cell_size // 2))
         self.screen.blit(text_surface, text_rect)
 
@@ -248,8 +248,8 @@ class VisualCGFungeTable:
 
         d = self.cgfunge.annotations[self.hover_row][self.hover_col]
         letter = self.cgfunge.table[self.hover_row][self.hover_col]
-        text = f"{letter} ({ord(letter)})"
         #text+=f" -> {self.cgfunge.heatmap[self.hover_row][self.hover_col]}"
+        text = f"{letter} ({ord(letter)})".encode('utf-8', 'replace').decode()
         lines = []
 
         if "error" in d:
