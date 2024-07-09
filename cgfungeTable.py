@@ -122,13 +122,15 @@ class CGFungeTable:
                 stack[-1]=self.to_int32(stack[-1])
             elif current_action=="/":
                 second = stack[-1]
-                stack = stack[:-1]
                 if second == 0:
                     if "error" not in self.annotations[py][px]: self.annotations[py][px]["error"] = []
                     self.annotations[py][px]["error"].append((number, "DIVISION BY 0"))
                     self.heatmap[py][px]=-1
                     return -1
-                stack[-1]= stack[-1]//second
+                stack = stack[:-1]
+                add_one = (stack[-1]%second)!=0
+                stack[-1] = stack[-1]//second
+                if add_one and stack[-1]<0: stack[-1]+=1
                 stack[-1]=self.to_int32(stack[-1])
             elif current_action=="P":
                 stack = stack[:-1]
