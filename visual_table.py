@@ -558,9 +558,14 @@ class VisualCGFungeTable:
                         self.run_simulation()
 
                     #CTRL+C
-                    elif event.key == pygame.K_c:
+                    elif event.key == pygame.K_c or event.key == pygame.K_x:
                         if is_shift:
                             self.send_to_clipboard()
+
+                            if event.key == pygame.K_x:
+                                self.clear_all()
+                                self.add_undo_state()
+
                         elif self.active_cell:
                             x,y = self.active_cell
                             if self.selection_cell_end:
@@ -577,6 +582,9 @@ class VisualCGFungeTable:
                                 self.send_to_clipboard(content[:-1])
                             else:
                                 self.send_to_clipboard(self.cgfunge.table[y][x])
+                        
+                            if event.key == pygame.K_x:
+                                self.backspace_press()
                 
                     #CTRL+V
                     elif event.key == pygame.K_v:
